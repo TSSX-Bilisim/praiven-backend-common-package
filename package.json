@@ -1,0 +1,49 @@
+{
+  "name": "@tssx-bilisim/praiven-backend-common-package",
+  "version": "1.0.0",
+  "description": "praiven shared backend common package",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TSSX-Bilisim/praiven-backend-common-package.git"
+  },
+  "author": "TSS-X Bilişim",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/TSSX-Bilisim/praiven-backend-common-package/issues"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "homepage": "https://github.com/TSSX-Bilisim/praiven-backend-common-package#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "express": "^5.1.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./decorators": {
+      "types": "./dist/decorators/index.d.ts",
+      "import": "./dist/decorators/index.mjs",
+      "require": "./dist/decorators/index.js"
+    }
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.8"
+  }
+}

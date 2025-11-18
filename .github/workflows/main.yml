@@ -1,0 +1,25 @@
+name: Node.js Package
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  publish-gpr:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com/
+          scope: '@tssx-bilisim'
+      - run: npm install
+      - run: rm -rf dist
+      - run: npm run build
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{SECRETS.GITHUB_TOKEN}}

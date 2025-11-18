@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# OS veya IDE dosyaları
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# NPM package files
+.npmrc
+package-lock.json
