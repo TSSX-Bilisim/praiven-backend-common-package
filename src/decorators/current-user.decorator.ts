@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import type { RequestUser } from '../auth/types/request-user.type';
+import { RequestUser } from '../types/request-user.type';
 
 /**
  * API Gateway tarafından eklenen 'x-user-id', 'x-user-role' ve 'x-user-is-system'
