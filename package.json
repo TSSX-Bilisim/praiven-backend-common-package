@@ -1,6 +1,6 @@
 {
   "name": "@tssx-bilisim/praiven-backend-common-package",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "praiven shared backend common package",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -41,6 +41,11 @@
       "types": "./dist/decorators/index.d.ts",
       "import": "./dist/decorators/index.mjs",
       "require": "./dist/decorators/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.mjs",
+      "require": "./dist/types/index.js"
     }
   },
   "dependencies": {
