@@ -7,11 +7,31 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { ROLES_KEY } from './roles.decorator';
+import { UserRoles, UserRole } from '../types/user-roles.constant';
+
+/**
+ * Rol hiyerarşisi: user < manager < admin < super_admin
+ * Daha yüksek seviyeli roller, düşük seviyeli rollerin yetkilerine de sahiptir.
+ */
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRoles.USER]: 1,
+  [UserRoles.MANAGER]: 2,
+  [UserRoles.ADMIN]: 3,
+  [UserRoles.SUPER_ADMIN]: 4,
+};
 
 /**
  * Rollere dayalı yetkilendirme guard'u.
  * Controller veya handler üzerinde @Roles() decorator'u ile tanımlanan
- * rolleri kontrol eder ve kullanıcının rolü eşleşmiyorsa erişimi engeller.
+ * rolleri kontrol eder ve kullanıcının rolü yetersizse erişimi engeller.
+ *
+ * Rol Hiyerarşisi: user < manager < admin < super_admin
+ * Belirtilen rol, minimum gereksinim olarak çalışır.
+ * Örneğin @Roles(UserRoles.MANAGER) kullanıldığında:
+ * - USER: Erişim YOK
+ * - MANAGER: Erişim VAR
+ * - ADMIN: Erişim VAR
+ * - SUPER_ADMIN: Erişim VAR
  *
  * @example
  * // AppModule veya ilgili modülde global olarak kullanım:
@@ -26,7 +46,7 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // Handler ve class düzeyinde tanımlı rolleri al
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
@@ -37,7 +57,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
-    const userRoleId = request.headers['x-user-roleid'] as string;
+    const userRoleId = request.headers['x-user-roleid'] as UserRole;
 
     // Rol bilgisi yoksa erişimi reddet
     if (!userRoleId) {
@@ -46,8 +66,23 @@ export class RolesGuard implements CanActivate {
       );
     }
 
-    // Kullanıcının rolü gerekli roller arasında mı kontrol et
-    const hasRequiredRole = requiredRoles.includes(userRoleId);
+    // Kullanıcının rol seviyesini al
+    const userRoleLevel = ROLE_HIERARCHY[userRoleId];
+
+    // Kullanıcının rol seviyesi tanımlı değilse erişimi reddet
+    if (userRoleLevel === undefined) {
+      throw new ForbiddenException(
+        'Geçersiz kullanıcı rolü.',
+      );
+    }
+
+    // Gereken minimum rol seviyesini bul (en düşük seviyeli rol)
+    const minimumRequiredLevel = Math.min(
+      ...requiredRoles.map((role) => ROLE_HIERARCHY[role] ?? Infinity),
+    );
+
+    // Kullanıcının rolü yeterli mi kontrol et (hiyerarşik karşılaştırma)
+    const hasRequiredRole = userRoleLevel >= minimumRequiredLevel;
 
     if (!hasRequiredRole) {
       throw new ForbiddenException(

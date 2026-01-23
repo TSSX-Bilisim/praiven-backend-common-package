@@ -4,14 +4,30 @@
 
 `@Roles` decorator'u ve `RolesGuard`, controller veya handler seviyesinde rol tabanlı yetkilendirme sağlar. Auth servisindeki seed rolleri ile senkronize çalışır.
 
+## Rol Hiyerarşisi
+
+RolesGuard, hiyerarşik bir yapıda çalışır. Belirtilen rol **minimum gereksinim** olarak değerlendirilir:
+
+```
+user < manager < admin < super_admin
+```
+
+**Önemli:** Daha yüksek seviyeli roller, düşük seviyeli rollerin yetkilerine de sahiptir.
+
+Örneğin `@Roles(UserRoles.MANAGER)` kullanıldığında:
+- **USER**: Erişim ❌
+- **MANAGER**: Erişim ✅
+- **ADMIN**: Erişim ✅
+- **SUPER_ADMIN**: Erişim ✅
+
 ## Mevcut Roller
 
 ```typescript
 export const UserRoles = {
-  SUPER_ADMIN: 'role_superadmin_001',
-  ADMIN: 'role_admin_002',
-  MANAGER: 'role_manager_003',
-  USER: 'role_user_004',
+  SUPER_ADMIN: 'role_superadmin_001',  // Seviye: 4
+  ADMIN: 'role_admin_002',              // Seviye: 3
+  MANAGER: 'role_manager_003',          // Seviye: 2
+  USER: 'role_user_004',                // Seviye: 1
 } as const;
 ```
 
@@ -47,7 +63,7 @@ export class AppModule {}
 
 ## Kullanım Örnekleri
 
-### Örnek 1: Tek Rol
+### Örnek 1: Minimum Rol Gereksinimi (Önerilen Kullanım)
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
@@ -55,15 +71,27 @@ import { Roles, UserRoles } from '@tssx-bilisim/praiven-backend-common-package';
 
 @Controller('admin')
 export class AdminController {
-  @Roles(UserRoles.SUPER_ADMIN)
+  @Roles(UserRoles.MANAGER) // Manager ve üstü erişebilir
+  @Get('dashboard')
+  getDashboard() {
+    return { message: 'Manager, Admin, Super Admin can access' };
+  }
+
+  @Roles(UserRoles.ADMIN) // Admin ve üstü erişebilir
   @Get('settings')
   getSettings() {
-    return { message: 'Only Super Admins can access this' };
+    return { message: 'Only Admin and Super Admin can access' };
+  }
+
+  @Roles(UserRoles.SUPER_ADMIN) // Sadece Super Admin erişebilir
+  @Get('system')
+  getSystemSettings() {
+    return { message: 'Only Super Admin can access' };
   }
 }
 ```
 
-### Örnek 2: Birden Fazla Rol
+### Örnek 2: Birden Fazla Rol (En Düşük Seviyeli Rol Geçerli Olur)
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
@@ -71,10 +99,11 @@ import { Roles, UserRoles } from '@tssx-bilisim/praiven-backend-common-package';
 
 @Controller('reports')
 export class ReportsController {
+  // MANAGER en düşük seviyeli olduğundan, MANAGER ve üstü erişebilir
   @Roles(UserRoles.SUPER_ADMIN, UserRoles.ADMIN, UserRoles.MANAGER)
   @Get('metrics')
   getMetrics() {
-    return { message: 'Admins and Managers can access this' };
+    return { message: 'Manager and above can access' };
   }
 }
 ```
@@ -86,10 +115,8 @@ import { Controller, Get } from '@nestjs/common';
 import { Roles, UserRoles, CurrentUser, RequestUser } from '@tssx-bilisim/praiven-backend-common-package';
 
 @Controller('users')
-@Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+@Roles(UserRoles.ADMIN) // Tüm endpoint'ler minimum ADMIN rolü gerektirir
 export class UsersController {
-  // Tüm endpoint'ler ADMIN veya SUPER_ADMIN rolü gerektirir
-  
   @Get()
   getAllUsers() {
     return { message: 'List of users' };
@@ -98,6 +125,8 @@ export class UsersController {
   @Get('profile')
   getProfile(@CurrentUser() user: RequestUser) {
     return { userId: user.userId, roleId: user.roleId };
+  }
+}
   }
 }
 ```
@@ -168,7 +197,8 @@ export class PublicController {
 - `RolesGuard`, Gateway'den gelen `x-user-roleid` header'ını kontrol eder
 - Eğer bir endpoint'te `@Roles()` decorator'u yoksa, herkes erişebilir
 - Handler seviyesindeki roller, controller seviyesindeki rolleri override eder
-- Kullanıcının roleId'si, izin verilen roller listesinde olmalıdır
+- **Hiyerarşik kontrol:** Belirtilen rol, minimum gereksinim olarak değerlendirilir
+- Birden fazla rol belirtildiğinde, en düşük seviyeli rol minimum gereksinim olur
 
 ## Test Örneği
 
